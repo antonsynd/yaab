@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "Video Ad Blocker",
+  "version": "2.0.0",
+  "description": "Blocks in-video ads on Dailymotion and IYF.tv",
+  "permissions": [
+    "declarativeNetRequest",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.dailymotion.com/*",
+    "*://*.iyf.tv/*",
+    "*://*.kubb.tv/*",
+    "*://*.yfsp.tv/*",
+    "*://*.yifan.tv/*",
+    "*://*.hlive.io/*"
+  ],
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.dailymotion.com/*"],
+      "js": ["content-shared.js", "content-dailymotion.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.iyf.tv/*",
+        "*://*.kubb.tv/*",
+        "*://*.yfsp.tv/*",
+        "*://*.yifan.tv/*",
+        "*://*.hlive.io/*"
+      ],
+      "js": ["content-shared.js", "content-iyf.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
