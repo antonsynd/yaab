@@ -29,7 +29,8 @@
       "matches": ["*://*.dailymotion.com/*"],
       "js": ["content-shared.js", "content-dailymotion.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "world": "MAIN"
     },
     {
       "matches": [
@@ -41,7 +42,8 @@
       ],
       "js": ["content-shared.js", "content-iyf.js"],
       "run_at": "document_start",
-      "all_frames": true
+      "all_frames": true,
+      "world": "MAIN"
     }
   ],
   "icons": {

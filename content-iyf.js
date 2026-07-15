@@ -107,33 +107,65 @@
   `;
   (document.head || document.documentElement).appendChild(style);
 
-  // --- 6. Ensure canViewPublic stays true ---
-  // The app sets _utility.canViewPublic = !window.isAdsBlocked in testPublic().
-  // We already pinned isAdsBlocked to false, but as a safety net, also observe the
-  // Angular component initialization to patch canViewPublic back.
+  // --- 6. Neuter the interstitial ad scheduler and ensure canViewPublic ---
+  // The app has an RxJS-based interstitial scheduler that periodically triggers
+  // ad breaks with a countdown timer (waitSecond) + load counter (maxSecond).
+  // We find it in Angular's component context and disable it entirely.
+  // We also pin canViewPublic=true (set by testPublic() based on isAdsBlocked).
   const onReady = () => {
-    // Periodically check and fix any canViewPublic = false state on Angular services
+    let schedulerDone = false;
     let attempts = 0;
-    const interval = setInterval(() => {
+
+    const patchInterval = setInterval(() => {
       attempts++;
-      if (attempts > 30) { clearInterval(interval); return; }
+      if (attempts > 120) { clearInterval(patchInterval); return; }
 
-      // Find the Angular root and try to access the utility service
-      const appRoot = document.querySelector("app-root");
-      if (!appRoot) return;
+      const selectors = ["app-root", "app-video", "vg-player"];
+      for (const sel of selectors) {
+        const els = document.querySelectorAll(sel);
+        for (const el of els) {
+          const ctx = el.__ngContext__;
+          if (!ctx || !Array.isArray(ctx)) continue;
 
-      // Walk Angular component tree via __ngContext__ if available
-      const ctx = appRoot.__ngContext__;
-      if (!ctx) return;
+          for (let i = 0; i < ctx.length; i++) {
+            const item = ctx[i];
+            if (!item || typeof item !== "object") continue;
 
-      // The utility service has canViewPublic; search for it
-      for (let i = 0; i < ctx.length; i++) {
-        const item = ctx[i];
-        if (item && typeof item === "object" && "canViewPublic" in item) {
-          if (!item.canViewPublic) item.canViewPublic = true;
+            if ("canViewPublic" in item && !item.canViewPublic) {
+              item.canViewPublic = true;
+            }
+
+            if (!schedulerDone &&
+                "maxSecond" in item && "waitSecond" in item &&
+                "dataEvent" in item && typeof item.play === "function") {
+              try {
+                if (item.globalsubscript) item.globalsubscript.unsubscribe();
+              } catch (_) {}
+              try {
+                if (item.subscript) item.subscript.unsubscribe();
+              } catch (_) {}
+              item.globalsubscript = null;
+              item.subscript = null;
+              item.play = () => {};
+              item.startPlay = () => {};
+              item.startLoadCounter = () => {};
+              item.startCountDown = () => {};
+              item.invokeList = () => {};
+              schedulerDone = true;
+            }
+
+            if ("isPlayingAds" in item && "mediaList" in item && "loadingMedia" in item) {
+              if (item.isPlayingAds) item.isPlayingAds = false;
+              if (item.component && item.component.isPlayingAds) {
+                item.component.isPlayingAds = false;
+              }
+            }
+          }
         }
       }
-    }, 500);
+
+      if (schedulerDone) clearInterval(patchInterval);
+    }, 300);
   };
 
   if (document.readyState === "complete" || document.readyState === "interactive") {
